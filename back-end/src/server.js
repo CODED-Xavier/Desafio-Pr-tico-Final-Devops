@@ -5,6 +5,23 @@ const { pool } = require('./config/database');
 const { connectRedis, disconnectRedis } = require('./config/redis');
 const { createTables } = require('./database/migrations');
 
+// 1. Importar a biblioteca do Prometheus
+const client = require('prom-client');
+
+// 2. Iniciar a recolha das métricas padrão do Node.js
+client.collectDefaultMetrics();
+
+// 3. Expor a rota /metrics para o Prometheus raspar (fazer scrape)
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', client.register.contentType);
+    res.send(await client.register.metrics());
+  } catch (err) {
+    logger.error('Erro ao expor métricas', { error: err.message });
+    res.status(500).end(err);
+  }
+});
+
 const start = async () => {
   try {
     // Run migrations
